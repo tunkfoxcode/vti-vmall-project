@@ -16,6 +16,14 @@ services:
       - CONFIG_SEARCH_LOCATIONS=file:/app/configs
     networks:
       - vmall-network
+    # logging:
+    #   driver: fluentd
+    #   options:
+    #     fluentd-address: localhost:24224
+    #     fluentd-async: "true"
+    #     fluentd-retry-wait: "1s"
+    #     fluentd-max-retries: "30"
+    #     tag: config-server
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:6969/actuator/health"]
       interval: 10s
@@ -23,130 +31,146 @@ services:
       retries: 5
       start_period: 40s
 
-  discovery-service:
-    build:
-      context: ./discovery-service
-      dockerfile: Dockerfile
-    image: "discovery-service:latest"
-    container_name: "discovery-service"
-    ports:
-      - "8762:8762"
-    networks:
-      - vmall-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8762/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
+  # discovery-service:
+  #   build:
+  #     context: ./discovery-service
+  #     dockerfile: Dockerfile
+  #   image: "discovery-service:latest"
+  #   container_name: "discovery-service"
+  #   ports:
+  #     - "8762:8762"
+  #   networks:
+  #     - vmall-network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8762/actuator/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 40s
 
-  # Application Services
+  # # Application Services
 
-  user-manager:
-    depends_on:
-      config-server:
-        condition: service_healthy
-      discovery-service:
-        condition: service_healthy
-    build:
-      context: .
-      dockerfile: user-manager/Dockerfile
-    image: "user-manager:latest"
-    container_name: "user-manager"
-    ports:
-      - "8001:8001"
-    environment:
-      - CONFIG_SERVER_URL=http://config-server:6969
-      - SPRING_DATASOURCE_URL=jdbc:mysql://192.168.1.14:3306/user-manager?createDatabaseIfNotExist=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
-      - SPRING_RABBITMQ_HOST=192.168.1.14
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
-      - EUREKA_SERVER=http://discovery-service:8762/eureka
-      - OAUTH2_ISSUER_URI=http://user-manager:8001
-    networks:
-      - vmall-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8001/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+  # user-manager:
+  #   depends_on:
+  #     config-server:
+  #       condition: service_healthy
+  #     discovery-service:
+  #       condition: service_healthy
+  #   build:
+  #     context: .
+  #     dockerfile: user-manager/Dockerfile
+  #   image: "user-manager:latest"
+  #   container_name: "user-manager"
+  #   ports:
+  #     - "8001:8001"
+  #   environment:
+  #     - CONFIG_SERVER_URL=http://config-server:6969
+  #     - SPRING_DATASOURCE_URL=jdbc:mysql://192.168.1.14:3306/user-manager?createDatabaseIfNotExist=true
+  #     - SPRING_DATASOURCE_USERNAME=root
+  #     - SPRING_DATASOURCE_PASSWORD=root
+  #     - SPRING_RABBITMQ_HOST=192.168.1.14
+  #     - SPRING_RABBITMQ_PORT=5672
+  #     - SPRING_RABBITMQ_USERNAME=guest
+  #     - SPRING_RABBITMQ_PASSWORD=guest
+  #     - EUREKA_SERVER=http://discovery-service:8762/eureka
+  #     - OAUTH2_ISSUER_URI=http://user-manager:8001
+  #   networks:
+  #     - vmall-network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8001/actuator/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 60s
 
-  mall-service:
-    depends_on:
-      config-server:
-        condition: service_healthy
-      discovery-service:
-        condition: service_healthy
-      user-manager:
-        condition: service_healthy
-    build:
-      context: ./mall-service
-      dockerfile: Dockerfile
-    image: "mall-service:latest"
-    container_name: "mall-service"
-    ports:
-      - "8002:8002"
-    environment:
-      - CONFIG_SERVER_URL=http://config-server:6969
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://user-manager:8001
-      - EUREKA_SERVER=http://discovery-service:8762/eureka
-      - SPRING_PROFILES_ACTIVE=swagger
-      - API_DOCS_SERVER=http://localhost:8002
-      - API_DOCS_OAUTH2_TOKEN_URL=http://localhost:8001/oauth2/token
-      - API_DOCS_OAUTH2_AUTHORIZATION_URL=http://localhost:8001/oauth2/authorize
-    networks:
-      - vmall-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8002/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+  # mall-service:
+  #   depends_on:
+  #     config-server:
+  #       condition: service_healthy
+  #     discovery-service:
+  #       condition: service_healthy
+  #     user-manager:
+  #       condition: service_healthy
+  #   build:
+  #     context: ./mall-service
+  #     dockerfile: Dockerfile
+  #   image: "mall-service:latest"
+  #   container_name: "mall-service"
+  #   ports:
+  #     - "8002:8002"
+  #   environment:
+  #     - CONFIG_SERVER_URL=http://config-server:6969
+  #     - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://user-manager:8001
+  #     - EUREKA_SERVER=http://discovery-service:8762/eureka
+  #     - SPRING_PROFILES_ACTIVE=swagger
+  #     - API_DOCS_SERVER=http://localhost:8002
+  #     - API_DOCS_OAUTH2_TOKEN_URL=http://localhost:8001/oauth2/token
+  #     - API_DOCS_OAUTH2_AUTHORIZATION_URL=http://localhost:8001/oauth2/authorize
+  #   networks:
+  #     - vmall-network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8002/actuator/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 60s
 
   # # Observability
 
-  # prometheus:
-  #   image: "quay.io/prometheus/prometheus:v2.52.0"
-  #   container_name: "vmall-prometheus"
-  #   ports:
-  #     - "9090:9090"
-  #   volumes:
-  #     - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  #     - prometheus-data:/prometheus
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #     - '--storage.tsdb.path=/prometheus'
-  #   networks:
-  #     - vmall-network
-  #   depends_on:
-  #     - config-server
-  #     - discovery-service
-  #     - user-manager
-  #     - mall-service
-  #     - notification-service
-  #     - shipment-service
-  #     - api-gateway
+  # # fluent-bit:
+  # #   image: grafana/fluent-bit-plugin-loki:2.9.8
+  # #   container_name: vmall-fluent-bit
+  # #   restart: unless-stopped
+  # #   network_mode: host
+  # #   environment:
+  # #     - LOKI_URL=http://localhost:3100/loki/api/v1/push
+  # #   volumes:
+  # #     - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
 
-  # grafana:
-  #   image: "grafana/grafana-oss:10.4.3"
-  #   container_name: "vmall-grafana"
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - GF_SECURITY_ADMIN_USER=admin
-  #     - GF_SECURITY_ADMIN_PASSWORD=admin
-  #   volumes:
-  #     - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
-  #     - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
-  #     - grafana-data:/var/lib/grafana
-  #   networks:
-  #     - vmall-network
-  #   depends_on:
-  #     - prometheus
+  # # loki:
+  # #   image: grafana/loki:2.9.8
+  # #   container_name: vmall-loki
+  # #   restart: unless-stopped
+  # #   network_mode: host
+  # #   volumes:
+  # #     - loki-data:/loki
+
+  # # prometheus:
+  # #   image: "quay.io/prometheus/prometheus:v2.52.0"
+  # #   container_name: "vmall-prometheus"
+  # #   ports:
+  # #     - "9090:9090"
+  # #   volumes:
+  # #     - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  # #     - prometheus-data:/prometheus
+  # #   command:
+  # #     - '--config.file=/etc/prometheus/prometheus.yml'
+  # #     - '--storage.tsdb.path=/prometheus'
+  # #   networks:
+  # #     - vmall-network
+  # #   depends_on:
+  # #     - config-server
+  # #     - discovery-service
+  # #     - user-manager
+  # #     - mall-service
+
+  # # grafana:
+  # #   image: "grafana/grafana-oss:10.4.3"
+  # #   container_name: "vmall-grafana"
+  # #   ports:
+  # #     - "3000:3000"
+  # #   environment:
+  # #     - GF_SECURITY_ADMIN_USER=admin
+  # #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  # #   volumes:
+  # #     - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
+  # #     - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
+  # #     - grafana-data:/var/lib/grafana
+  # #   networks:
+  # #     - vmall-network
+  # #   depends_on:
+  # #     - prometheus
+  # #     - loki
 
 networks:
   vmall-network:
@@ -157,3 +181,4 @@ volumes:
   rabbitmq-data:
   prometheus-data:
   grafana-data:
+  loki-data:

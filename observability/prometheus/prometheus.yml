@@ -34,27 +34,3 @@ scrape_configs:
       - targets: ['mall-service:8002']
         labels:
           application: 'mall-service'
-
-  # Notification Service
-  - job_name: 'notification-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['notification-service:8003']
-        labels:
-          application: 'notification-service'
-
-  # Shipment Service
-  - job_name: 'shipment-service'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['shipment-service:8004']
-        labels:
-          application: 'shipment-service'
-
-  # API Gateway
-  - job_name: 'api-gateway'
-    metrics_path: '/actuator/prometheus'
-    static_configs:
-      - targets: ['api-gateway:8888']
-        labels:
-          application: 'api-gateway'
